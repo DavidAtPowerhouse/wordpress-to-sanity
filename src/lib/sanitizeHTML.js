@@ -11,6 +11,8 @@ module.exports = html => sanitizeHTML(html, {
     'code',
     'div',
     'em',
+    'figure',
+    'figcaption',
     'h2',
     'h3',
     'h4',
