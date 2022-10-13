@@ -7,6 +7,9 @@ const XmlStream = require('xml-stream')
 const parseDate = require('./lib/parseDate')
 const parseBody = require('./lib/parseBody')
 const slugify = require('slugify')
+const path = require("path");
+const convert = require("csvtojson")
+
 function generateAuthorId (id) {
   return `author-${id}`
 }
@@ -20,6 +23,16 @@ function readFile (path = '') {
     return console.error('You need to set path')
   }
   return fs.createReadStream(path)
+}
+async function buildJSONfromCSV (filename) {
+  const json = convert().fromFile(filename)
+  // return json;
+  const IDs = [];
+  json.forEach( (obj) => {
+    console.log(obj.ID);
+    IDs.push(obj.ID);
+  })
+  return IDs;
 }
 
 async function buildJSONfromStream (stream) {
@@ -116,10 +129,12 @@ async function buildJSONfromStream (stream) {
 }
 
 async function main () {
-  const filename = './exampleData/alexoglou.xml'
-  const stream = await readFile(filename)
-  const output = await buildJSONfromStream(stream)
-  output.forEach(doc => log(JSON.stringify(doc, null, 0)))
+  const filename = path.join(__dirname, '/../data/post-20221004_062040-export-trimmed-3.csv')
+  // const filename = path.join(__dirname, '/../data/example.csv')
+  // const stream = await readFile(filename)
+  const output = await buildJSONfromCSV(filename)
+  // output.forEach(doc => log(JSON.stringify(doc, null, 0)))
+  console.dir(output);
 }
 
 main()

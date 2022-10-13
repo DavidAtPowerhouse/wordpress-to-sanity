@@ -3,7 +3,7 @@ const path = require('path')
 const {autop} = require('@wordpress/autop')
 const shortcode = require('shortcode-parser')
 const parseBody = require('../src/lib/parseBody')
-const filepath = path.join(__dirname, '/../src/example-post_contenthtml')
+const filepath = path.join(__dirname, '/../import/example-post_content_captions.html')
 const console = require('console')
 shortcode.add(
 'caption',
