@@ -1,8 +1,26 @@
 const Schema = require('@sanity/schema').default
-
+// const imageResource = require('./imageResource')
 module.exports = Schema.compile({
   name: 'myBlog',
   types: [
+    {
+      name: 'imageResource',
+      title: 'Image Resource',
+      type: 'object',
+      fields: [{
+        name: 'imageLink',
+        type: 'url',
+        title: 'Image Link'
+      },{
+        title: 'Caption',
+        name: 'caption',
+        type: 'text',
+      },{
+        title: 'Image URL',
+        name: 'imageUrl',
+        type: 'url'
+      }],
+    },
     {
       type: 'object',
       name: 'blogPost',
@@ -27,7 +45,7 @@ module.exports = Schema.compile({
                 {title: 'H4', value: 'h4'},
                 {title: 'H5', value: 'h5'},
                 {title: 'H6', value: 'h6'},
-                {title: 'Caption', value: 'caption'}
+                {title: 'Caption', value: 'caption'},
               ],
               lists: [
                 {title: 'Numbered', value: 'number'},
@@ -39,9 +57,15 @@ module.exports = Schema.compile({
                   { title: "Emphasis", value: "em" },
                 ],
               }
-            },
+            }
           ]
-        }
+        },
+        {
+          title: 'Slug',
+          type: 'slug',
+          name: 'slug'
+        },
+
       ]
     }
   ]

@@ -3,7 +3,7 @@ const path = require('path')
 const {autop} = require('@wordpress/autop')
 const shortcode = require('shortcode-parser')
 const parseBody = require('../src/lib/parseBody')
-const filepath = path.join(__dirname, '/../import/example-post_content_captions.html')
+const filepath = path.join(__dirname, '/../data/post-export-3.csv')
 const console = require('console')
 shortcode.add(
 'caption',
@@ -15,7 +15,7 @@ fs.readFile(
   filepath,
   {encoding: "utf-8"},
   function(err, data) {
-    const html = shortcode.parse(autop(data));
+    const html = autop(shortcode.parse(data));
     if(err){
       console.err(err)
     } else {

@@ -2,139 +2,139 @@
 
 /* eslint-disable id-length, no-console, no-process-env, no-sync, no-process-exit */
 const fs = require('fs')
-const { log } = console
-const XmlStream = require('xml-stream')
-const parseDate = require('./lib/parseDate')
+const { log, dir, error } = require('console')
+// const parseDate = require('./lib/parseDate')
 const parseBody = require('./lib/parseBody')
 const slugify = require('slugify')
 const path = require("path");
-const convert = require("csvtojson")
+const csvtojson = require("csvtojson")
+const {autop} = require('@wordpress/autop')
+const shortcode = require('shortcode-parser')
+const ndjson = require('ndjson')
 
-function generateAuthorId (id) {
-  return `author-${id}`
-}
-
-function generateCategoryId (id) {
-  return `category-${id}`
-}
-
-function readFile (path = '') {
-  if (!path) {
-    return console.error('You need to set path')
+shortcode.add(
+  'caption',
+  function(buf, opts) {
+    return `<figure><figcaption>${buf}</figcaption></figure>`;
   }
-  return fs.createReadStream(path)
-}
-async function buildJSONfromCSV (filename) {
-  const json = convert().fromFile(filename)
-  // return json;
-  const IDs = [];
-  json.forEach( (obj) => {
-    console.log(obj.ID);
-    IDs.push(obj.ID);
-  })
-  return IDs;
-}
+);
 
-async function buildJSONfromStream (stream) {
-  const xml = await new XmlStream(stream)
+async function buildJSONfromCSVEvent(csvFilename, exportedFilename) {
 
-  return new Promise((res, rej) => {
-    /**
-     * Get some meta info
-     */
-    const meta = {}
-    xml.on('text: wp:base_site_url', url => {
-      meta.rootUrl = url.$text
-    })
+  const posts = [];
+  csvtojson().fromStream(fs.createReadStream(csvFilename))
+    .on('data', (item) => {
 
-    /**
-     * Get the categories
-     */
-    const categories = []
-    xml.on('endElement: category', wpCategory => {
-      const { nicename } = wpCategory.$
-      const category = {
-        _type: 'category',
-        _id: generateCategoryId(nicename),
-        title: nicename
-      }
-      categories.push(category)
-    })
-
-    /**
-     * Get the users
-     */
-    const users = []
-    xml.on('endElement: wp:author', author => {
-      const user = {
-        _type: 'author',
-        _id: generateAuthorId(author['wp:author_id']),
-        name: author['wp:author_display_name'],
-        slug: {
-          current: slugify(author['wp:author_login'], { lower: true })
-        },
-        email: author['wp:author_email']
-      }
-      users.push(user)
-    })
-
-    /**
-     * Get the posts
-     */
-    const posts = []
-    xml.collect('wp:postmeta')
-    xml.on('endElement: item', item => {
-      const { title, category, link: permalink, description } = item
-      if (item['wp:post_type'] != 'post' && item['wp:post_type'] != 'page') { return }
+      const myItem = JSON.parse(item);
+      // console.dir(JSON.parse(item), {depth: null})
       const post = {
-        _type: 'post',
-        title,
-        slug: {
-          current: slugify(title, { lower: true })
-        },
-        categories: [
-          {
-            _type: 'reference',
-            _ref: generateCategoryId(category.$.nicename)
-          }
-        ],
-        description,
-        body: parseBody(item['content:encoded']),
-        publishedAt: parseDate(item)
-        /* author: {
-          _type: 'reference',
-          _ref: users.find(user => user.slug.current === item['dc:creator'])._id
-        },
-        */
+        title: myItem.post_title,
+        body: parseBody(shortcode.parse(autop(myItem.post_content)), {depth: null}),
+        _type: "blogPost"
       }
-      posts.push(post)
+      if(post) {
+        // posts.push(post)
+        fs.appendFile(exportedFilename, JSON.stringify(post)+"\n", 'utf8', (err) => {
+          if  (err) throw err;
+          // log("The file:",exportedFilename,"has been saved.")
+        })
+      }
     })
-
-    // there seems to be a bug where errors is not caught
-    xml.on('error', err => {
-      throw new Error(err)
+    .on('end', () => {
+      // console.log('event stream: end')
+      // fs.writeFile(exportedFilename, JSON.stringify(posts, null, "\t"), 'utf8', (err) => {
+      //   if  (err) throw err;
+        // log("The file:",exportedFilename,"has been saved.")
+      // })
+      // log(posts.length,"items written to file")
+      // console.dir(JSON.stringify(posts), {depth: null})
     })
-
-    xml.on('end', () => {
-      const output = [
-        /* meta, */
-        ...users,
-        ...posts,
-        ...categories
-      ]
-
-      return res(output)
-    })
+    .then((value) => {
+    // value is the whole McValue meal.
+    // console.log('then...', value[0].post_title)
+    // console.log('then')
   })
 }
+
+
+async function buildJSONfromCSVSubscribe (csvFilename) {
+  const onError = (e) => {
+    error( new Error(e))
+  };
+  const onComplete = () => {
+    log("...we are done here.")
+  };
+  const posts = [];
+  csvtojson().fromStream(fs.createReadStream(csvFilename))
+    .subscribe((item, lineNumber) => {
+      // log("lineNumber: ", lineNumber)
+      return new Promise((resolve, reject) => {
+        const myBody = {
+          title: item.post_title,
+          body: parseBody(shortcode.parse(autop(item.post_content)), {depth: null})
+        }
+        // dir(myBody,{depth:null}) // this dumps to command line okay
+
+        resolve(myBody) // and resolve doesn't do anything so far.
+      })
+      .then( (value) => {
+        posts.push(value)
+        console.dir(value, {depth: null})
+      })
+
+    }, onError, onComplete)
+
+    .then((value) => {
+      return posts;
+      // const thenPost = { title: post.post_title}
+      // posts.push(thenPost)
+    })
+  return posts; // this doesn't go anywhere...
+}
+
+async function buildJSONfromCSV2 (csvFilename) {
+  const onError = (e) => {
+    log("error: ", e)
+  };
+  const onComplete = () => {
+    log("...we are done here.")
+  };
+
+  const posts = []
+
+  const json = await csvtojson().fromFile(csvFilename)
+    .subscribe((item, lineNumber) => {
+      return new Promise((resolve, reject) => {
+        const post  =  {
+          _type: 'post',
+          title: item.post_title,
+          slug: {
+            current: slugify(post_title, {lower: true})
+          },
+          excerpt: post_excerpt,
+          body: parseBody(shortcode.parse(autop(post_content)), {depth: null})
+        }
+        resolve(post)
+      }).then( (value) => {
+        posts.push(value)
+      })
+    }, onError, onComplete);
+
+
+  return json;
+}
+
 
 async function main () {
-  const filename = path.join(__dirname, '/../data/post-20221004_062040-export-trimmed-3.csv')
-  // const filename = path.join(__dirname, '/../data/example.csv')
-  // const stream = await readFile(filename)
-  const output = await buildJSONfromCSV(filename)
-  // output.forEach(doc => log(JSON.stringify(doc, null, 0)))
-  console.dir(output);
+  const csvInputFilename = 'post-20221004_062040-export-trimmed-10.csv'
+  const filename = path.join(__dirname,'/../data', csvInputFilename)
+  const dateString = new Date().toISOString().replace(/[T :]/gim, '-').substring(0, 19)
+  const jsonOutputFilename = `${csvInputFilename.replace('.csv','')}-${dateString}.json`;
+  const transformed = path.join(__dirname,'/../data/out', jsonOutputFilename)
+  // const output = await
+  buildJSONfromCSVEvent(filename, transformed)
+
+  // dir(output, {depth: null});
 }
 
 main()

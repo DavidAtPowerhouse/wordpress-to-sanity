@@ -4,7 +4,9 @@
   "description": "",
   "main": "index.js",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "start": "node ./src/migrate.js",
+    "migrate": "node ./src/migrate.js 2>&1 >> ./data/import-$(date '+%Y-%m-%d-%H-%M-%S').json"
   },
   "author": "",
   "license": "ISC",
@@ -16,8 +18,11 @@
     "@wordpress/autop": "^3.19.0",
     "@wordpress/shortcode": "^3.19.0",
     "cheerio": "^1.0.0-rc.3",
+    "console": "^0.7.2",
     "csvtojson": "^2.0.10",
     "jsdom": "^16.2.2",
+    "luxon": "^3.0.4",
+    "ndjson": "^2.0.0",
     "sanitize-html": "^2.7.2",
     "shortcode-parser": "0.0.1",
     "slugify": "^1.4.0",
