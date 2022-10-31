@@ -68,7 +68,7 @@ async function main () {
   const jsonOutputFilename = `${csvInputFilename.replace('.csv','')}-${dateString}.ndjson`;
   const transformed = path.join(__dirname,'/../data/out', jsonOutputFilename)
 
-  buildJSONfromCSVEvent(filename, transformed, false)
+  buildJSONfromCSVEvent(filename, transformed, true)
 
 }
 
