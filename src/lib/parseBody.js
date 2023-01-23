@@ -85,7 +85,10 @@ function htmlToBlocks (html, options) {
           imageUrl: imageUrl(el)
         }
         return block(result)
+
       }
+
+
 
       return undefined
     }
@@ -138,84 +141,51 @@ function htmlToBlocks (html, options) {
       return undefined;
     }
   };
-  const defaultImageRule = {
-    deserialize (el, next, block) {
-      let imgBlock;
-      if (el.tagName.toLowerCase() === 'img') {
-        imgBlock = {
-          children: [],
-          imageUrl: `image@${el
-            .getAttribute('src')
-            .replace(/^\/\//, 'https://')}`,
-        };
-        if(el.getAttribute('alt') && el.getAttribute('alt') !== "") {
-          Object.assign(imgBlock,{caption:`${el.getAttribute('alt')}`}, )
-        }
-        return block(imgBlock)
-      }
-
-      // Only convert block-level images, for now
-      return undefined
-    }
-  }
-  const figure = {
-    deserialize(el, next, block) {
-      if (el.tagName.toLowerCase() === 'figure'){
-        return block({
-          _type: 'block',
-          style: 'figure',
-          children: next(el.childNodes)
-        })
-      }
-
-      // deserialize has gotta return something
-      return undefined
-    }
-  }
-  const figcaption = {
-    deserialize ( el, next, block) {
-      if (el.tagName.toLowerCase() === 'figcaption') {
-        return block({
-          _type: 'block',
-          style: 'caption',
-          children: next(el.childNodes)
-        })
-      }
-      return undefined
-    }
-  }
-  const defaultAnchorWrapsImageRule = {
-    deserialize(el, next, block) {
-      if (el.tagName.toLowerCase() === 'a' &&
-        el.childNodes.length > 0 &&
-        el.childNodes[0].tagName &&
-        el.childNodes[0].tagName.toLowerCase() === 'img'
-
-      ) {
-        let annotations;
-        annotations = {
-        annotations: {
-          link: `${el.getAttribute('href')}`
-        }}
-        if(el.childNodes[0].getAttribute('alt')){
-          annotations = Object.assign(annotations, {annotations:{alternativeText: `${el.childNodes[0].getAttribute('alt')}`}})
-        }
-
-
-        return block(Object.assign({
-          imageUrl: `${el.childNodes[0].getAttribute('src')}`,
-          _type: 'imageResource'
-        },annotations))
-      }
-      return undefined;
-    }
-  }
   const blocks = blockTools.htmlToBlocks(sanitizeHTML(html), blockContentType, {
     parseHtml: htmlContent => new JSDOM(htmlContent).window.document,
     rules: [
-      figure,
-      figcaption,
-      defaultAnchorWrapsImageRule
+      {
+        deserialize (el, next, block) {
+          let imgBlock;
+          if (el.tagName.toLowerCase() === 'img') {
+              imgBlock = {
+                children: [],
+                imageUrl: `image@${el
+                  .getAttribute('src')
+                  .replace(/^\/\//, 'https://')}`,
+              };
+            if(el.getAttribute('alt') && el.getAttribute('alt') !== "") {
+              Object.assign(imgBlock,{caption:`${el.getAttribute('alt')}`}, )
+            }
+            return block(imgBlock)
+          }
+
+          // Only convert block-level images, for now
+          return undefined
+        }
+      },
+      {
+        deserialize(el, next, block) {
+          if (el.tagName.toLowerCase() === 'a' &&
+            el.childNodes.length > 0 &&
+            el.childNodes[0].tagName &&
+            el.childNodes[0].tagName.toLowerCase() === 'img'
+
+          ) {
+            let annotations;
+            if(el.childNodes[0].getAttribute('alt')){
+              annotations = { annotations:{alternativeText: el.childNodes[0].getAttribute('alt') }}
+            }
+            return block(Object.assign({
+                imageUrl: `${el.childNodes[0].getAttribute('src')}`,
+                imageLink: `${el.getAttribute('href')}`,
+                _type: 'imageResource'
+            },annotations))
+          }
+          return undefined;
+        }
+      },
+      imageResource
     ],
   })
   return blocks
