@@ -62,7 +62,7 @@ async function buildJSONfromCSVEvent(csvFilename, exportedFilename, consoleOut =
 }
 
 async function main () {
-  const csvInputFilename = 'post-export-10.csv'
+  const csvInputFilename = 'post-export-1.csv'
   const filename = path.join(__dirname,'/../data', csvInputFilename)
   const dateString = DateTime.now().setZone('Australia/Sydney').toFormat('y-MM-dd-HH-mm-ss')
   const jsonOutputFilename = `${csvInputFilename.replace('.csv','')}-${dateString}.ndjson`;
