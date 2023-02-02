@@ -4,11 +4,11 @@ const {autop} = require('@wordpress/autop')
 const fs = require('fs')
 const path = require('path')
 const parseBody = require('../src/lib/parseBody')
-const filepath = path.join(__dirname, '/../data/post-export-3.csv')
 const console = require('console')
 const csvtojson = require("csvtojson");
 const shortcode = require('shortcode-parser')
 const argv = require('minimist-lite')(process.argv.slice(2))
+const imgCaptionShortcode = require('../src/lib/imgCaptionShortcode')
 // a little description
 // we will expect arg in: to be the source assumed to be in the data directory
 // arg out: will be the destination, assumed to be in the data/out directory
@@ -16,7 +16,16 @@ const argv = require('minimist-lite')(process.argv.slice(2))
 shortcode.add(
 'caption',
 function(buf, opts) {
-    return `<figure><figcaption>${buf}</figcaption></figure>`;
+    const captionArray = imgCaptionShortcode(buf);
+    if(captionArray === undefined) {
+      return buf
+    }
+
+    // console.log(imgCaptionShortcode(buf));
+    if(typeof captionArray === 'object' && captionArray.isArray && captionArray.length > 2) {
+      return `<figure><figcaption>${captionArray[1]}</figcaption>${captionArray[2]}</figure>`;
+    }
+    return buf;
   }
 );
 

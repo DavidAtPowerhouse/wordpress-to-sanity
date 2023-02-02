@@ -1,5 +1,4 @@
 const Schema = require('@sanity/schema').default
-// const imageResource = require('./imageResource')
 module.exports = Schema.compile({
   name: 'myBlog',
   types: [

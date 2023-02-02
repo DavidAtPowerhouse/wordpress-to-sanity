@@ -2,7 +2,7 @@ const { JSDOM } = require('jsdom')
 const blockTools = require('@sanity/block-tools').default
 const sanitizeHTML = require('./sanitizeHTML')
 const defaultSchema = require('../../schema/defaultSchema')
-// const {log,dir} = require('console')
+const {log,dir} = require('console')
 const blockContentType = defaultSchema
   .get('blogPost')
   .fields.find(field => field.name === 'body').type
@@ -30,6 +30,10 @@ function htmlToBlocks (html, options) {
     })
   }
 
+
+  // scenarios
+  // 1. <div><img></div>
+  // 2. [caption]<a><img></a>Text[/caption]
   const imageLink = (el) => {
     // find <a>
     const imageAnchor = [...el.childNodes]
@@ -85,10 +89,7 @@ function htmlToBlocks (html, options) {
           imageUrl: imageUrl(el)
         }
         return block(result)
-
       }
-
-
 
       return undefined
     }
@@ -102,12 +103,13 @@ function htmlToBlocks (html, options) {
       let imageLink, caption, imageUrl, imageAnchor
       children.forEach((child) => {
         if(child.tagName.toLowerCase() === 'figcaption') {
+          caption = child.textContent
           if (child.childNodes.length > 0) {
-            caption  = [...child.childNodes].reduce(
-              (prev, cur) => {
-                return `${prev.textContent} ${cur.textContent}`
-              }
-            ).toString().trim()
+            // caption  = [...child.childNodes].reduce(
+            //   (prev, cur) => {
+            //     return `${prev.textContent} ${cur.textContent}`
+            //   }
+            // ).toString().trim()
 
             // find <a>
             imageAnchor = [...child.childNodes].find(n1 => n1.tagName && n1.tagName.toLowerCase() === 'a')
@@ -131,9 +133,9 @@ function htmlToBlocks (html, options) {
       })
       const result = {
         _type: 'imageResource',
-        caption: caption,
-        imageLink: imageLink,
-        imageUrl: imageUrl
+        caption: `${caption}`,
+        imageLink: `${imageLink}`,
+        imageUrl: `${imageUrl}`
       }
         // log(result)
         return block(result)
@@ -141,9 +143,33 @@ function htmlToBlocks (html, options) {
       return undefined;
     }
   };
+
+  const imageWithAnchor = {
+    deserialize(el, next, block) {
+      if (el.tagName.toLowerCase() === 'a' &&
+        el.childNodes.length > 0 &&
+        el.childNodes[0].tagName &&
+        el.childNodes[0].tagName.toLowerCase() === 'img'
+
+      ) {
+        let annotations;
+        if(el.childNodes[0].getAttribute('alt')){
+          annotations = { annotations:{alternativeText: el.childNodes[0].getAttribute('alt') }}
+        }
+        return block(Object.assign({
+          imageUrl: `${el.childNodes[0].getAttribute('src')}`,
+          imageLink: `${el.getAttribute('href')}`,
+          _type: 'imageResource'
+        },annotations))
+      }
+      return undefined
+    }
+  };
+
   const blocks = blockTools.htmlToBlocks(sanitizeHTML(html), blockContentType, {
     parseHtml: htmlContent => new JSDOM(htmlContent).window.document,
     rules: [
+      figureRule,
       {
         deserialize (el, next, block) {
           let imgBlock;
@@ -164,28 +190,8 @@ function htmlToBlocks (html, options) {
           return undefined
         }
       },
-      {
-        deserialize(el, next, block) {
-          if (el.tagName.toLowerCase() === 'a' &&
-            el.childNodes.length > 0 &&
-            el.childNodes[0].tagName &&
-            el.childNodes[0].tagName.toLowerCase() === 'img'
 
-          ) {
-            let annotations;
-            if(el.childNodes[0].getAttribute('alt')){
-              annotations = { annotations:{alternativeText: el.childNodes[0].getAttribute('alt') }}
-            }
-            return block(Object.assign({
-                imageUrl: `${el.childNodes[0].getAttribute('src')}`,
-                imageLink: `${el.getAttribute('href')}`,
-                _type: 'imageResource'
-            },annotations))
-          }
-          return undefined;
-        }
-      },
-      imageResource
+      // imageResource
     ],
   })
   return blocks
