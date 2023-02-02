@@ -11,11 +11,22 @@ const csvtojson = require("csvtojson")
 const {autop} = require('@wordpress/autop')
 const shortcode = require('shortcode-parser')
 const ndjson = require('ndjson')
+const imgCaptionShortcode = require("./lib/imgCaptionShortcode");
+
 
 shortcode.add(
   'caption',
   function(buf, opts) {
-    return `<figure><figcaption>${buf}</figcaption></figure>`;
+    const captionArray = imgCaptionShortcode(buf);
+    if(captionArray === undefined) {
+      return buf
+    }
+
+    // console.log(imgCaptionShortcode(buf));
+    if(typeof captionArray === 'object' && captionArray.isArray && captionArray.length > 2) {
+      return `<figure><figcaption>${captionArray[1]}</figcaption>${captionArray[2]}</figure>`;
+    }
+    return buf;
   }
 );
 
@@ -30,7 +41,8 @@ async function buildJSONfromCSVEvent(csvFilename, exportedFilename) {
       const post = {
         title: myItem.post_title,
         body: parseBody(shortcode.parse(autop(myItem.post_content)), {depth: null}),
-        _type: "blogPost"
+        _type: "blogPost",
+        sourceURL: myItem.permalink
       }
       if(post) {
         // posts.push(post)

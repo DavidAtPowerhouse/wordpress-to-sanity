@@ -4,11 +4,9 @@ function parseCaption(content) {
     return undefined
   }
 
-  // const pattern = "/((?:<a [^>]+>\\s*)?<img [^>]+>(?:\\s*<\\/a>)?)(.*)/is"
-  const regex = /((?:<a [^>]+>\s*)?<img [^>]+>(?:\s*<\/a>)?)(.*)/is
   if(typeof content === 'string')
   {
-    return content.match(regex);
+    return content.match(/((?:<a [^>]+>\s*)?<img [^>]+>(?:\s*<\/a>)?)(.*)/is);
   }
   return undefined
 }

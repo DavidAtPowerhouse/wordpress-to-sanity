@@ -40,7 +40,8 @@ async function buildJSONfromCSVEvent(csvFilename, exportedFilename, outputFormat
       const post = {
         title: myItem.post_title,
         body: parseBody(shortcode.parse(autop(myItem.post_content)), {depth: null}),
-        _type: "blogPost"
+        _type: "blogPost",
+        sourceURL: myItem.permalink
       }
       if(post) {
 
